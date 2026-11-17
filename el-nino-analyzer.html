@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Niño Analyzer</title>
+<style>
+:root{--bg:#050b14;--p:#0c1727;--p2:#112238;--b:#1d3350;--t:#e6f0ff;--m:#7f98b8;--el:#ff6b3d;--la:#3da5ff;--ne:#9aa9bd;--ok:#2ee6a6;--g:#4285f4;--q:#f55036;--o:#a78bfa}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(1200px 600px at 10% -10%,#12305a55,transparent),var(--bg);color:var(--t);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--b)}
+header h1{font-size:17px;letter-spacing:.5px}header span{color:var(--m);font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}
+main{flex:1;display:flex;gap:14px;padding:14px;overflow-x:auto;scroll-snap-type:x proximity;min-height:0}
+.pn{flex:0 0 min(88vw,400px);background:linear-gradient(180deg,var(--p2),var(--p));border:1px solid var(--b);border-radius:16px;padding:16px;overflow-y:auto;scroll-snap-align:start;display:flex;flex-direction:column;gap:12px}
+.pn.w{flex-basis:min(92vw,560px)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--m);display:flex;align-items:center;gap:8px}
+label{font-size:11px;color:var(--m);display:block;margin-bottom:3px}
+input,select{width:100%;background:#071120;border:1px solid var(--b);color:var(--t);border-radius:8px;padding:8px 10px;font-size:13px}
+input:focus{outline:2px solid #3da5ff55}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{font-size:44px;font-weight:800;line-height:1}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid}
+.El{color:var(--el);border-color:var(--el);background:#ff6b3d1a}.La{color:var(--la);border-color:var(--la);background:#3da5ff1a}.Ne{color:var(--ne);border-color:var(--ne);background:#9aa9bd1a}
+.bar{height:12px;border-radius:99px;background:linear-gradient(90deg,var(--la),#2a3a52 40%,#2a3a52 60%,var(--el));position:relative}
+.bar i{position:absolute;top:-4px;width:4px;height:20px;background:#fff;border-radius:3px;box-shadow:0 0 10px #fff;transition:left .5s}
+.sc{display:flex;justify-content:space-between;color:var(--m);font-size:10px;margin-top:4px}
+button{background:#1b3a63;color:var(--t);border:1px solid #2c5a96;border-radius:9px;padding:9px 12px;font-weight:600;cursor:pointer;font-size:13px}
+button:hover{background:#245086}button.pri{background:linear-gradient(90deg,#ff6b3d,#ff9d3d);border:0;color:#190a02}
+button:disabled{opacity:.5}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.ai{border-top:3px solid var(--c)}
+.ai .out{font-size:13px;display:flex;flex-direction:column;gap:8px}
+.ai ul{padding-left:18px}.err{color:#ff8a8a;font-size:12px;word-break:break-word}
+.spin{color:var(--m)}
+.tl{height:8px;border-radius:9px;background:#071120;overflow:hidden}.tl i{display:block;height:100%;background:var(--c,#2ee6a6)}
+svg{width:100%;height:auto;background:#071120;border-radius:10px}
+small{color:var(--m)}
+.kv{display:flex;justify-content:space-between;border-bottom:1px solid #1d335033;padding:4px 0}
+</style></head><body>
+<header><div class="dot"></div><h1>EL NIÑO ANALYZER</h1><span>ENSO intelligence · Gemini × Groq × OpenRouter</span></header>
+<main>
+
+<section class="pn">
+<h2>① Data input</h2>
+<div class="g2">
+<div><label>Niño 3.4 anomaly (°C)</label><input id="n34" type="number" step="0.1" value="1.2"></div>
+<div><label>ONI (°C)</label><input id="oni" type="number" step="0.1" value="0.9"></div>
+<div><label>SOI</label><input id="soi" type="number" step="0.1" value="-8.5"></div>
+<div><label>Region / focus</label><input id="reg" value="Global"></div>
+</div>
+<div><label>ONI history (comma separated, oldest → newest)</label><input id="ser" value="-0.4,-0.1,0.2,0.5,0.7,0.9,1.1,1.2"></div>
+<button class="pri" onclick="upd()">Update dashboard</button>
+<small>Values shown are editable sample defaults — paste the latest figures from NOAA CPC for a real analysis.</small>
+</section>
+
+<section class="pn">
+<h2>② ENSO status</h2>
+<div><div class="big" id="val">–</div><small>Niño 3.4 anomaly °C</small></div>
+<div><span class="badge" id="ph">–</span> <span id="int" style="margin-left:6px;color:var(--m)"></span></div>
+<div><div class="bar"><i id="mk"></i></div><div class="sc"><span>−3 La Niña</span><span>0</span><span>El Niño +3</span></div></div>
+<div id="kv"></div>
+</section>
+
+<section class="pn w">
+<h2>③ ONI trend</h2>
+<svg id="ch" viewBox="0 0 520 280"></svg>
+<small>Dashed lines mark the ±0.5 °C El Niño / La Niña thresholds.</small>
+</section>
+
+<section class="pn ai" style="--c:var(--g)" id="p-gem">
+<h2>④ Gemini</h2>
+<div><label>API key</label><input type="password" id="k-gem" placeholder="AIza…"></div>
+<div><label>Model</label><input id="m-gem" value="gemini-2.5-flash"></div>
+<button onclick="run('gem')">Analyze with Gemini</button>
+<div class="out" id="o-gem"></div>
+</section>
+
+<section class="pn ai" style="--c:var(--q)" id="p-grq">
+<h2>⑤ Groq</h2>
+<div><label>API key</label><input type="password" id="k-grq" placeholder="gsk_…"></div>
+<div><label>Model</label><input id="m-grq" value="llama-3.3-70b-versatile"></div>
+<button onclick="run('grq')">Analyze with Groq</button>
+<div class="out" id="o-grq"></div>
+</section>
+
+<section class="pn ai" style="--c:var(--o)" id="p-opr">
+<h2>⑥ OpenRouter</h2>
+<div><label>API key</label><input type="password" id="k-opr" placeholder="sk-or-…"></div>
+<div><label>Model</label><input id="m-opr" value="openai/gpt-4o-mini"></div>
+<button onclick="run('opr')">Analyze with OpenRouter</button>
+<div class="out" id="o-opr"></div>
+</section>
+
+<section class="pn">
+<h2>⑦ Consensus</h2>
+<button class="pri" onclick="runAll()">Run all 3 models</button>
+<div id="cons"><small>Run the models to see agreement.</small></div>
+</section>
+
+</main>
+<script>
+const $=id=>document.getElementById(id),R={};
+const NAMES={gem:'Gemini',grq:'Groq',opr:'OpenRouter'};
+const cls=p=>/el/i.test(p)?'El':/la/i.test(p)?'La':'Ne';
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+function phase(a){const x=Math.abs(a);const s=x>=2?'Very strong':x>=1.5?'Strong':x>=1?'Moderate':x>=.5?'Weak':'';
+ return a>=.5?['El Niño',s]:a<=-.5?['La Niña',s]:['Neutral','']}
+function data(){return{n34:+$('n34').value,oni:+$('oni').value,soi:+$('soi').value,reg:$('reg').value,ser:$('ser').value.split(',').map(Number).filter(x=>!isNaN(x))}}
+function upd(){const d=data(),[p,s]=phase(d.n34);
+ $('val').textContent=(d.n34>0?'+':'')+d.n34.toFixed(1);
+ $('val').style.color=d.n34>=.5?'var(--el)':d.n34<=-.5?'var(--la)':'var(--t)';
+ $('ph').textContent=p;$('ph').className='badge '+cls(p);$('int').textContent=s;
+ $('mk').style.left=Math.max(0,Math.min(100,(d.n34+3)/6*100))+'%';
+ const t=d.ser.length>1?d.ser[d.ser.length-1]-d.ser[0]:0;
+ $('kv').innerHTML=[['ONI (3-mo mean)',d.oni],['SOI (neg = El Niño-like)',d.soi],['Trend over series',(t>=0?'+':'')+t.toFixed(2)+' °C'],['Months ≥ +0.5',d.ser.filter(x=>x>=.5).length+' / '+d.ser.length]].map(([a,b])=>`<div class="kv"><span>${a}</span><b>${b}</b></div>`).join('');
+ chart(d.ser);consensus()}
+function chart(s){const W=520,H=280,pd=30,mx=Math.max(2,...s.map(Math.abs)),y=v=>H/2-v/mx*(H/2-pd),x=i=>pd+i*(W-2*pd)/Math.max(1,s.length-1);
+ let h=`<line x1="${pd}" x2="${W-pd}" y1="${y(0)}" y2="${y(0)}" stroke="#2a3a52"/>`;
+ [.5,-.5].forEach(v=>h+=`<line x1="${pd}" x2="${W-pd}" y1="${y(v)}" y2="${y(v)}" stroke="${v>0?'#ff6b3d':'#3da5ff'}" stroke-dasharray="5 5" opacity=".6"/><text x="4" y="${y(v)+4}" fill="#7f98b8" font-size="10">${v>0?'+':''}${v}</text>`);
+ if(s.length){const pts=s.map((v,i)=>x(i)+','+y(v)).join(' ');
+ h+=`<polygon points="${x(0)},${y(0)} ${pts} ${x(s.length-1)},${y(0)}" fill="#ff9d3d22"/><polyline points="${pts}" fill="none" stroke="#ff9d3d" stroke-width="3" stroke-linejoin="round"/>`;
+ s.forEach((v,i)=>h+=`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="${v>=.5?'#ff6b3d':v<=-.5?'#3da5ff':'#9aa9bd'}"/><text x="${x(i)}" y="${y(v)-9}" text-anchor="middle" fill="#e6f0ff" font-size="10">${v}</text>`)}
+ $('ch').innerHTML=h}
+function prompt_(){const d=data();return `You are a climate scientist specializing in ENSO. Analyze these observations and respond with ONLY valid JSON, no markdown.
+Data: Nino3.4 anomaly=${d.n34}C, ONI=${d.oni}C, SOI=${d.soi}, ONI history (oldest to newest)=[${d.ser}], focus region=${d.reg}.
+Schema: {"phase":"El Niño"|"La Niña"|"Neutral","confidence":0-100,"summary":"2-3 sentences","outlook":"next 3-6 months","impacts":["up to 4 regional impacts for ${d.reg}"],"risks":["up to 3 uncertainties"]}`}
+async function call(id,key,model,pr){
+ let r,j;
+ if(id==='gem'){r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:pr}]}],generationConfig:{responseMimeType:'application/json'}})});
+  j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);return j.candidates[0].content.parts[0].text}
+ const url=id==='grq'?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
+ const body={model,messages:[{role:'user',content:pr}],temperature:.3};if(id==='grq')body.response_format={type:'json_object'};
+ r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify(body)});
+ j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);return j.choices[0].message.content}
+function parse(t){t=t.replace(/```json|```/g,'').trim();const a=t.indexOf('{'),b=t.lastIndexOf('}');return JSON.parse(t.slice(a,b+1))}
+async function run(id){const key=$('k-'+id).value.trim(),o=$('o-'+id);
+ if(!key){o.innerHTML='<div class="err">Enter an API key first.</div>';return}
+ try{localStorage.setItem('k-'+id,key)}catch(e){}
+ o.innerHTML='<div class="spin">Analyzing…</div>';
+ try{const t=await call(id,key,$('m-'+id).value.trim(),prompt_()),j=parse(t);R[id]=j;show(id,j)}
+ catch(e){delete R[id];o.innerHTML=`<div class="err">${esc(e.message)}</div>`}
+ consensus()}
+function show(id,j){const c=Math.max(0,Math.min(100,+j.confidence||0));
+ $('o-'+id).innerHTML=`<div><span class="badge ${cls(j.phase)}">${esc(j.phase)}</span> <small>${c}% confidence</small></div>
+ <div class="tl"><i style="width:${c}%"></i></div><div>${esc(j.summary)}</div>
+ <div><b>Outlook:</b> ${esc(j.outlook)}</div>
+ <div><b>Impacts</b><ul>${(j.impacts||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+ <div><b>Uncertainties</b><ul>${(j.risks||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`}
+function runAll(){['gem','grq','opr'].forEach(run)}
+function consensus(){const ids=Object.keys(R);if(!ids.length)return;
+ const calc=phase(data().n34)[0],cnt={};ids.forEach(i=>cnt[R[i].phase]=(cnt[R[i].phase]||0)+1);
+ const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0],avg=Math.round(ids.reduce((s,i)=>s+(+R[i].confidence||0),0)/ids.length);
+ $('cons').innerHTML=`<div><span class="badge ${cls(top[0])}">${esc(top[0])}</span> <small>${top[1]}/${ids.length} models agree</small></div>
+ <div class="big">${avg}%</div><small>average confidence</small>
+ ${ids.map(i=>`<div class="kv"><span>${NAMES[i]}</span><b>${esc(R[i].phase)} · ${R[i].confidence}%</b></div>`).join('')}
+ <div class="kv"><span>Threshold rule (Niño 3.4)</span><b>${calc}</b></div>
+ <small>${top[0]===calc?'AI consensus matches the threshold rule.':'AI consensus differs from the simple threshold rule — check the data.'}</small>`}
+['gem','grq','opr'].forEach(i=>{try{$('k-'+i).value=localStorage.getItem('k-'+i)||''}catch(e){} });
+upd();
+</script></body></html>
